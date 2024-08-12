@@ -1,14 +1,14 @@
 # Load Windows Forms
 Add-Type -AssemblyName System.Windows.Forms
 
-# Define the base path (up to the folder containing the random folder)
+# Define the base path
 $basePath = "$env:LOCALAPPDATA\Stormgate\Saved\Replays"
 $downloadsPath = "$env:USERPROFILE\Downloads"
 
-# Identify the random-named parent folder
+# Identify the random-named parent folder, doesnt support multiple Steam accs
 $randomFolder = Get-ChildItem -Path $basePath | Where-Object { $_.PSIsContainer } | Select-Object -First 1
 
-# If the folder is found, set the full path
+# If the folder is found, set the full path, else crash out
 if ($randomFolder) {
     $path = Join-Path -Path $basePath -ChildPath $randomFolder.Name
 } else {
@@ -16,7 +16,6 @@ if ($randomFolder) {
     exit
 }
 
-# Initialize the script-scoped variables
 $script:numberOfFiles = 5
 
 # Create the form
@@ -66,6 +65,22 @@ function Check-Downloads {
         $destination = Join-Path -Path $path -ChildPath $file.Name
         Copy-Item -Path $file.FullName -Destination $destination -Force
     }
+    
+    $listView.Items.Clear()  # Explicitly clear items
+
+    # Load the files into the ListView
+    $files = Get-ChildItem -Path $path | Sort-Object LastWriteTime -Descending | Select-Object -First $numberOfFiles
+
+    foreach ($file in $files) {
+        $item = New-Object System.Windows.Forms.ListViewItem($file.Name)
+        $item.SubItems.Add($file.LastWriteTime.ToString())
+        $item.Tag = $file.FullName
+        $listView.Items.Add($item)
+    }
+
+    $listView.Refresh()
+
+
 }
 
 # Initial load
